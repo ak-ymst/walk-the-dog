@@ -1,6 +1,6 @@
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
-//use rand::thread_rng;
+use rand::prelude::*;
 use web_sys::console;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
@@ -45,14 +45,6 @@ fn sierpinki(context: &web_sys::CanvasRenderingContext2d, points: [(f64, f64); 3
 
     let [top, left, right] = points;
     if depth > 0 {
-
-//    let mut rng = rand::thread_rng();
-	//  let next_color = (
-	//    rand::random::<u8>(),
-	//    rand::random::<u8>(),
-	//    rand::random::<u8>(),
-	// );
-
         let next_color = get_color(depth);
 
         let left_mid = midpoint(top, left);
@@ -84,14 +76,14 @@ fn midpoint(point_1: (f64, f64), point_2: (f64, f64)) -> (f64, f64) {
 }
 
 fn get_color(depth: u8) -> (u8, u8, u8) {
-    let x: u8  = depth % 3;
+    let mut rng = thread_rng();
+    let range = rand::distributions::Uniform::new(0, 255);
+    
+    let color = (
+       range.sample(&mut rng),
+       range.sample(&mut rng),
+       range.sample(&mut rng),
+    );
 
-    if x == 0 {
-        return (255, 0, 0);
-    }
-    if x == 1 {
-        return (0, 255, 0);
-    }
-
-    return (0, 0, 255);
+    return color;
 }
