@@ -1,12 +1,10 @@
 use gloo_utils::format::JsValueSerdeExt;
-use rand::prelude::*;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Mutex;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
-use web_sys::console;
 
 #[macro_use]
 mod browser;
@@ -42,29 +40,14 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub fn main_js() -> Result<(), JsValue> {
     console_error_panic_hook::set_once();
 
-    let window = web_sys::window().unwrap();
-    let document = window.document().unwrap();
-    let canvas = document
-        .get_element_by_id("canvas")
-        .unwrap()
-        .dyn_into::<web_sys::HtmlCanvasElement>()
-        .unwrap();
-
-    let context = canvas
-        .get_context("2d")
-        .unwrap()
-        .unwrap()
-        .dyn_into::<web_sys::CanvasRenderingContext2d>()
-        .unwrap();
+    let context = browser::context().expect("Could not get browser context");
 
     log!("Hello World 2");
 
-    wasm_bindgen_futures::spawn_local(async move {
-        let json = fetch_json("rhb.json")
+    browser::spawn_local(async move {
+        let sheet: Sheet = browser::fetch_json("rhb.json")
             .await
-            .expect("Could not fetch rhb.json");
-
-        let sheet: Sheet = json
+            .expect("Could not fetch rhb.json")
             .into_serde()
             .expect("Could not convert rhb.json into a Sheet structure");
 
@@ -81,7 +64,7 @@ pub fn main_js() -> Result<(), JsValue> {
 
         let error_callback = Closure::once(move |err| {
             if let Some(error_tx) = error_tx.lock().ok().and_then(|mut opt| opt.take()) {
-                error_tx.send(Err((err)));
+                error_tx.send(Err(err));
             }
         });
 
@@ -112,10 +95,12 @@ pub fn main_js() -> Result<(), JsValue> {
             );
         }) as Box<dyn FnMut()>);
 
-        window.set_interval_with_callback_and_timeout_and_arguments_0(
-            interval_callback.as_ref().unchecked_ref(),
-            50,
-        );
+        browser::window()
+            .unwrap()
+            .set_interval_with_callback_and_timeout_and_arguments_0(
+                interval_callback.as_ref().unchecked_ref(),
+                50,
+            );
         interval_callback.forget();
     });
 
