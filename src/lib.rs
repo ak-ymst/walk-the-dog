@@ -8,6 +8,9 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen::prelude::*;
 use web_sys::console;
 
+#[macro_use]
+mod browser;
+
 #[derive(Deserialize)]
 struct Sheet {
     frames: HashMap<String, Cell>,
@@ -54,7 +57,7 @@ pub fn main_js() -> Result<(), JsValue> {
         .dyn_into::<web_sys::CanvasRenderingContext2d>()
         .unwrap();
 
-    console::log_1(&JsValue::from_str("Hello World"));
+    log!("Hello World 2");
 
     wasm_bindgen_futures::spawn_local(async move {
         let json = fetch_json("rhb.json")
