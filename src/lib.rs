@@ -1,9 +1,5 @@
-use gloo_utils::format::JsValueSerdeExt;
-use serde::Deserialize;
 use std::collections::HashMap;
-use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
-use wasm_bindgen::closure::Closure;
 use wasm_bindgen::prelude::*;
 
 #[macro_use]
@@ -12,24 +8,6 @@ mod browser;
 mod engine;
 
 mod game;
-
-#[derive(Deserialize)]
-struct Sheet {
-    frames: HashMap<String, Cell>,
-}
-
-#[derive(Deserialize)]
-struct Rect {
-    x: u16,
-    y: u16,
-    w: u16,
-    h: u16,
-}
-
-#[derive(Deserialize)]
-struct Cell {
-    frame: Rect,
-}
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
