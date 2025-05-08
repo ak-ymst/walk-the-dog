@@ -43,7 +43,7 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
 pub trait Game {
     async fn initialize(&self) -> Result<Box<dyn Game>>;
     fn update(&mut self);
-    fn draw(&self, context: &CanvasRenderingContext2d);
+    fn draw(&self, renderer: &Renderer);
 }
 
 const FRAME_SIZE: f32 = 1.0 / 60.0 * 1000.0;
@@ -57,11 +57,15 @@ type SharedLoopClosure = Rc<RefCell<Option<LoopClosure>>>;
 type LoopClosure = Closure<dyn FnMut(f64)>;
 
 impl GameLoop {
-    pub async fn start(mut game: impl Game + 'static) -> Result<()> {
+    pub async fn start(game: impl Game + 'static) -> Result<()> {
         let mut game = game.initialize().await?;
         let mut game_loop = GameLoop {
             last_frame: browser::now()?,
             accumulated_delta: 0.0,
+        };
+
+        let renderer = Renderer {
+            context: browser::context()?,
         };
 
         let f: SharedLoopClosure = Rc::new(RefCell::new(None));
@@ -74,7 +78,7 @@ impl GameLoop {
                 game_loop.accumulated_delta -= FRAME_SIZE;
             }
             game_loop.last_frame = pref;
-            game.draw(&browser::context().expect("Context should exist"));
+            game.draw(&renderer);
             browser::request_animation_frame(f.borrow().as_ref().unwrap());
         }));
 
@@ -85,5 +89,43 @@ impl GameLoop {
         )?;
 
         return Ok(());
+    }
+}
+
+pub struct Renderer {
+    context: CanvasRenderingContext2d,
+}
+
+pub struct Rect {
+    x: u16,
+    y: u16,
+    width: u16,
+    height: u16,
+}
+
+impl Renderer {
+    pub fn clear(&self, rect: &Rect) {
+        self.context.clear_rect(
+            rect.x.into(),
+            rect.y.into(),
+            rect.width.into(),
+            rect.height.into(),
+        )
+    }
+
+    pub fn draw_image(&self, image: &HtmlImageElement, frame: &Rect, destination: &Rect) {
+        self.context
+            .draw_image_with_html_image_element_and_sw_and_sh_and_dx_and_dy_and_dw_and_dh(
+                &image,
+                frame.x.into(),
+                frame.y.into(),
+                frame.width.into(),
+                frame.height.into(),
+                destination.x.into(),
+                destination.y.into(),
+                destination.width.into(),
+                destination.height.into(),
+            )
+            .expect("Drawing is throwing exceptions! Urecoverable error.");
     }
 }
