@@ -3,6 +3,7 @@ use std::future::Future;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::closure::Closure;
+use wasm_bindgen::closure::WasmClosure;
 use wasm_bindgen::closure::WasmClosureFnOnce;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::CanvasRenderingContext2d;
@@ -87,4 +88,26 @@ where
     F: 'static + WasmClosureFnOnce<A, R>,
 {
     return Closure::once(fn_once);
+}
+
+pub fn now() -> Result<f64> {
+    Ok(window()?
+        .performance()
+        .ok_or_else(|| anyhow!("Performance object not found"))?
+        .now())
+}
+
+pub type LoopClosure = Closure<dyn FnMut(f64)>;
+pub fn request_animation_frame(callback: &LoopClosure) -> Result<i32> {
+    return window()?
+        .request_animation_frame(callback.as_ref().unchecked_ref())
+        .map_err(|err| anyhow!("Cannot requst animation frame {:#?}", err));
+}
+
+pub fn create_raf_closure(f: impl FnMut(f64) + 'static) -> LoopClosure {
+    return closure_wrap(Box::new(f));
+}
+
+pub fn closure_wrap<T: WasmClosure + ?Sized>(data: Box<T>) -> Closure<T> {
+    return Closure::wrap(data);
 }
