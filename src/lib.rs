@@ -11,6 +11,8 @@ mod browser;
 
 mod engine;
 
+mod game;
+
 #[derive(Deserialize)]
 struct Sheet {
     frames: HashMap<String, Cell>,
