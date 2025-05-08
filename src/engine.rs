@@ -1,5 +1,6 @@
 use crate::browser;
 use anyhow::{Result, anyhow};
+use async_trait::async_trait;
 use futures::channel::oneshot::channel;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -38,7 +39,9 @@ pub async fn load_image(source: &str) -> Result<HtmlImageElement> {
     Ok(image)
 }
 
+#[async_trait(?Send)]
 pub trait Game {
+    async fn initialize(&self) -> Result<Box<dyn Game>>;
     fn update(&mut self);
     fn draw(&self, context: &CanvasRenderingContext2d);
 }
@@ -55,6 +58,7 @@ type LoopClosure = Closure<dyn FnMut(f64)>;
 
 impl GameLoop {
     pub async fn start(mut game: impl Game + 'static) -> Result<()> {
+        let mut game = game.initialize().await?;
         let mut game_loop = GameLoop {
             last_frame: browser::now()?,
             accumulated_delta: 0.0,
