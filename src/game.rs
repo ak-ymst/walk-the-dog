@@ -1,6 +1,6 @@
 use crate::browser;
 use crate::engine;
-use crate::engine::{Game, Rect, Renderer};
+use crate::engine::{Game, KeyState, Rect, Renderer};
 use anyhow::Result;
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
@@ -65,7 +65,7 @@ impl Game for WalkTheDog {
         }))
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, keystate: &KeyState) {
         if self.frame < 23 {
             self.frame += 1;
         } else {

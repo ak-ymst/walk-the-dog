@@ -50,7 +50,8 @@ features = [
   "HtmlCanvasElement",
   "HtmlImageElement",
   "CanvasRenderingContext2d",
-  "Performance"
+  "Performance",
+  "KeyboardEvent"
 ]
 
 # These crates are used for running unit tests.
