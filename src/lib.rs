@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::*;
 
