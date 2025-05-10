@@ -1,15 +1,12 @@
 use crate::browser;
 use crate::engine;
-use crate::engine::{Game, KeyState, Rect, Renderer};
+use crate::engine::{Game, KeyState, Point, Rect, Renderer};
 use anyhow::Result;
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
 use serde::Deserialize;
 use std::collections::HashMap;
 use web_sys::HtmlImageElement;
-
-//use wasm_bindgen::JsCast;
-//use wasm_bindgen::JsValue;
 
 #[derive(Deserialize)]
 struct Sheet {
@@ -33,6 +30,7 @@ pub struct WalkTheDog {
     image: Option<HtmlImageElement>,
     sheet: Option<Sheet>,
     frame: u8,
+    position: Point,
 }
 
 impl WalkTheDog {
@@ -41,6 +39,7 @@ impl WalkTheDog {
             image: None,
             sheet: None,
             frame: 0,
+            position: Point { x: 0, y: 0 },
         }
     }
 }
@@ -62,10 +61,40 @@ impl Game for WalkTheDog {
             image: Some(image),
             sheet: Some(sheet),
             frame: self.frame,
+            position: self.position,
         }))
     }
 
     fn update(&mut self, keystate: &KeyState) {
+        let mut velocity = Point { x: 0, y: 0 };
+        if keystate.is_pressed("ArrowDown") {
+            velocity.y += 3;
+        }
+        if keystate.is_pressed("ArrowUp") {
+            velocity.y -= 3;
+        }
+        if keystate.is_pressed("ArrowRight") {
+            velocity.x += 3;
+        }
+        if keystate.is_pressed("ArrowLeft") {
+            velocity.x -= 3;
+        }
+
+        if self.position.x + velocity.x + 130 > 600 {
+            self.position.x = 600 - 130;
+        } else if self.position.x + velocity.x < 0 {
+            self.position.x = 0;
+        } else {
+            self.position.x += velocity.x;
+        }
+        if self.position.y + velocity.y + 120 > 600 {
+            self.position.y = 600 - 120;
+        } else if self.position.y + velocity.y < 0 {
+            self.position.y = 0;
+        } else {
+            self.position.y += velocity.y;
+        }
+
         if self.frame < 23 {
             self.frame += 1;
         } else {
@@ -98,8 +127,8 @@ impl Game for WalkTheDog {
                     height: sprite.frame.h.into(),
                 },
                 &Rect {
-                    x: 300.0,
-                    y: 300.0,
+                    x: self.position.x.into(),
+                    y: self.position.y.into(),
                     width: sprite.frame.w.into(),
                     height: sprite.frame.h.into(),
                 },
