@@ -2,19 +2,19 @@ use self::red_hat_boy_states::*;
 use crate::browser;
 use crate::engine;
 use crate::engine::{Game, KeyState, Point, Rect, Renderer};
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
 use serde::Deserialize;
 use std::collections::HashMap;
 use web_sys::HtmlImageElement;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Sheet {
     frames: HashMap<String, Cell>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct SheetRect {
     x: u16,
     y: u16,
@@ -22,7 +22,7 @@ struct SheetRect {
     h: u16,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Cell {
     frame: SheetRect,
 }
@@ -32,6 +32,7 @@ pub struct WalkTheDog {
     sheet: Option<Sheet>,
     frame: u8,
     position: Point,
+    rhb: Option<RedHatBoy>,
 }
 
 impl WalkTheDog {
@@ -41,6 +42,7 @@ impl WalkTheDog {
             sheet: None,
             frame: 0,
             position: Point { x: 0, y: 0 },
+            rhb: None,
         }
     }
 }
@@ -48,21 +50,19 @@ impl WalkTheDog {
 #[async_trait(?Send)]
 impl Game for WalkTheDog {
     async fn initialize(&self) -> Result<Box<dyn Game>> {
-        let sheet: Sheet = browser::fetch_json("rhb.json")
-            .await
-            .expect("Could not fetch rhb.json")
-            .into_serde()
-            .expect("Could not convert rhb.json into a Sheet structure");
+        let sheet: Option<Sheet> = browser::fetch_json("rhb.json").await?.into_serde()?;
 
-        let image = engine::load_image("rhb.png")
-            .await
-            .expect("Could not load rhb.png");
+        let image = Some(engine::load_image("rhb.png").await?);
 
         Ok(Box::new(WalkTheDog {
-            image: Some(image),
-            sheet: Some(sheet),
+            image: image.clone(),
+            sheet: sheet.clone(),
             frame: self.frame,
             position: self.position,
+            rhb: Some(RedHatBoy::new(
+                sheet.clone().ok_or_else(|| anyhow!("No Sheet Present"))?,
+                image.clone().ok_or_else(|| anyhow!("No Image Present"))?,
+            )),
         }))
     }
 
@@ -144,6 +144,16 @@ struct RedHatBoy {
     image: HtmlImageElement,
 }
 
+impl RedHatBoy {
+    fn new(sheet: Sheet, image: HtmlImageElement) -> Self {
+        RedHatBoy {
+            state_machine: RedHatBoyStateMachine::Idle(RedHatBoyState::new()),
+            sprite_sheet: sheet,
+            image,
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 enum RedHatBoyStateMachine {
     Idle(RedHatBoyState<Idle>),
@@ -173,6 +183,7 @@ impl From<RedHatBoyState<Running>> for RedHatBoyStateMachine {
 
 mod red_hat_boy_states {
     use crate::engine::Point;
+    const FLOOR: i16 = 475;
 
     #[derive(Copy, Clone)]
     pub struct Idle;
@@ -193,6 +204,17 @@ mod red_hat_boy_states {
     }
 
     impl RedHatBoyState<Idle> {
+        pub fn new() -> Self {
+            RedHatBoyState {
+                context: RedHatBoyContext {
+                    frame: 0,
+                    position: Point { x: 0, y: FLOOR },
+                    velocity: Point { x: 0, y: 0 },
+                },
+                _state: Idle {},
+            }
+        }
+
         pub fn run(self) -> RedHatBoyState<Running> {
             RedHatBoyState {
                 context: self.context,
