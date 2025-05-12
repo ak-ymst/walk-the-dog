@@ -135,6 +135,8 @@ impl Game for WalkTheDog {
                 },
             );
         });
+
+        self.rhb.as_ref().unwrap().draw(renderer);
     }
 }
 
@@ -151,6 +153,36 @@ impl RedHatBoy {
             sprite_sheet: sheet,
             image,
         }
+    }
+
+    fn draw(&self, renderer: &Renderer) {
+        let frame_name = format!(
+            "{} ({}).png",
+            self.state_machine.frame_name(),
+            (self.state_machine.context().frame / 3) + 1,
+        );
+
+        let sprite = self
+            .sprite_sheet
+            .frames
+            .get(&frame_name)
+            .expect("Cell not found");
+
+        renderer.draw_image(
+            &self.image,
+            &Rect {
+                x: sprite.frame.x.into(),
+                y: sprite.frame.y.into(),
+                width: sprite.frame.w.into(),
+                height: sprite.frame.h.into(),
+            },
+            &Rect {
+                x: self.state_machine.context().position.x.into(),
+                y: self.state_machine.context().position.y.into(),
+                width: sprite.frame.w.into(),
+                height: sprite.frame.h.into(),
+            },
+        );
     }
 }
 
@@ -173,6 +205,20 @@ impl RedHatBoyStateMachine {
             _ => self,
         }
     }
+
+    fn frame_name(&self) -> &str {
+        match self {
+            RedHatBoyStateMachine::Idle(state) => state.frame_name(),
+            RedHatBoyStateMachine::Running(state) => state.frame_name(),
+        }
+    }
+
+    fn context(&self) -> &RedHatBoyContext {
+        match self {
+            RedHatBoyStateMachine::Idle(state) => &state.context(),
+            RedHatBoyStateMachine::Running(state) => &state.context(),
+        }
+    }
 }
 
 impl From<RedHatBoyState<Running>> for RedHatBoyStateMachine {
@@ -184,6 +230,8 @@ impl From<RedHatBoyState<Running>> for RedHatBoyStateMachine {
 mod red_hat_boy_states {
     use crate::engine::Point;
     const FLOOR: i16 = 475;
+    const IDLE_FRAME_NAME: &str = "Idle";
+    const RUN_FRAME_NAME: &str = "Run";
 
     #[derive(Copy, Clone)]
     pub struct Idle;
@@ -196,11 +244,17 @@ mod red_hat_boy_states {
         _state: S,
     }
 
+    impl<S> RedHatBoyState<S> {
+        pub fn context(&self) -> &RedHatBoyContext {
+            &self.context
+        }
+    }
+
     #[derive(Copy, Clone)]
     pub struct RedHatBoyContext {
-        frame: u8,
-        position: Point,
-        velocity: Point,
+        pub frame: u8,
+        pub position: Point,
+        pub velocity: Point,
     }
 
     impl RedHatBoyState<Idle> {
@@ -220,6 +274,16 @@ mod red_hat_boy_states {
                 context: self.context,
                 _state: Running {},
             }
+        }
+
+        pub fn frame_name(&self) -> &str {
+            IDLE_FRAME_NAME
+        }
+    }
+
+    impl RedHatBoyState<Running> {
+        pub fn frame_name(&self) -> &str {
+            RUN_FRAME_NAME
         }
     }
 }
