@@ -1,7 +1,7 @@
 use self::red_hat_boy_states::*;
 use crate::browser;
 use crate::engine;
-use crate::engine::{Game, KeyState, Rect, Renderer};
+use crate::engine::{Game, Image, KeyState, Point, Rect, Renderer};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
@@ -27,9 +27,14 @@ struct Cell {
     frame: SheetRect,
 }
 
+pub struct Walk {
+    boy: RedHatBoy,
+    background: Image,
+}
+
 pub enum WalkTheDog {
     Loading,
-    Loaded(RedHatBoy),
+    Loaded(Walk),
 }
 
 impl WalkTheDog {
@@ -50,25 +55,30 @@ impl Game for WalkTheDog {
                     engine::load_image("rhb.png").await?,
                 );
 
-                Ok(Box::new(WalkTheDog::Loaded(rhb)))
+                let background = engine::load_image("BG.png").await?;
+
+                Ok(Box::new(WalkTheDog::Loaded(Walk {
+                    boy: rhb,
+                    background: Image::new(background, Point { x: 0, y: 0 }),
+                })))
             }
             WalkTheDog::Loaded(_) => Err(anyhow!("Error: Game is already initialized!")),
         }
     }
 
     fn update(&mut self, keystate: &KeyState) {
-        if let WalkTheDog::Loaded(rhb) = self {
+        if let WalkTheDog::Loaded(walk) = self {
             if keystate.is_pressed("ArrowDown") {
-                rhb.slide();
+                walk.boy.slide();
             }
             if keystate.is_pressed("ArrowRight") {
-                rhb.run_right();
+                walk.boy.run_right();
             }
             if keystate.is_pressed("Space") {
-                rhb.jump();
+                walk.boy.jump();
             }
 
-            rhb.update();
+            walk.boy.update();
         }
     }
 
@@ -80,8 +90,9 @@ impl Game for WalkTheDog {
             height: 600.0,
         });
 
-        if let WalkTheDog::Loaded(rhb) = self {
-            rhb.draw(renderer);
+        if let WalkTheDog::Loaded(walk) = self {
+            walk.background.draw(renderer);
+            walk.boy.draw(renderer);
         }
     }
 }
