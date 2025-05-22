@@ -1,31 +1,11 @@
 use self::red_hat_boy_states::*;
 use crate::browser;
 use crate::engine;
-use crate::engine::{Game, Image, KeyState, Point, Rect, Renderer};
+use crate::engine::{Game, Image, KeyState, Point, Rect, Renderer, Sheet};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
-use serde::Deserialize;
-use std::collections::HashMap;
 use web_sys::HtmlImageElement;
-
-#[derive(Deserialize, Clone)]
-struct Sheet {
-    frames: HashMap<String, Cell>,
-}
-
-#[derive(Deserialize, Clone)]
-struct SheetRect {
-    x: u16,
-    y: u16,
-    w: u16,
-    h: u16,
-}
-
-#[derive(Deserialize, Clone)]
-struct Cell {
-    frame: SheetRect,
-}
 
 pub struct Walk {
     boy: RedHatBoy,

@@ -3,6 +3,7 @@ use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use futures::channel::mpsc::{UnboundedReceiver, unbounded};
 use futures::channel::oneshot::channel;
+use serde::Deserialize;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -12,6 +13,24 @@ use wasm_bindgen::JsValue;
 use wasm_bindgen::closure::Closure;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlImageElement;
+
+#[derive(Deserialize, Clone)]
+pub struct Sheet {
+    pub frames: HashMap<String, Cell>,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct SheetRect {
+    pub x: u16,
+    pub y: u16,
+    pub w: u16,
+    pub h: u16,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct Cell {
+    pub frame: SheetRect,
+}
 
 pub struct Image {
     element: HtmlImageElement,
