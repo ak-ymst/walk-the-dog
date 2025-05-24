@@ -1,7 +1,7 @@
 use self::red_hat_boy_states::*;
 use crate::browser;
 use crate::engine;
-use crate::engine::{Game, Image, KeyState, Point, Rect, Renderer, Sheet};
+use crate::engine::{Cell, Game, Image, KeyState, Point, Rect, Renderer, Sheet};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
@@ -98,17 +98,7 @@ impl RedHatBoy {
     }
 
     fn draw(&self, renderer: &Renderer) {
-        let frame_name = format!(
-            "{} ({}).png",
-            self.state_machine.frame_name(),
-            (self.state_machine.context().frame / 3) + 1,
-        );
-
-        let sprite = self
-            .sprite_sheet
-            .frames
-            .get(&frame_name)
-            .expect("Cell not found");
+        let sprite = self.current_sprite().expect("Cell not foune");
 
         renderer.draw_image(
             &self.image,
@@ -131,6 +121,31 @@ impl RedHatBoy {
 
     fn update(&mut self) {
         self.state_machine = self.state_machine.update();
+    }
+
+    fn bounding_box(&self) -> Rect {
+        let sprite = self.current_sprite().expect("Cell not found");
+
+        Rect {
+            x: (self.state_machine.context().position.x + sprite.sprite_source_size.x as i16)
+                .into(),
+            y: (self.state_machine.context().position.y + sprite.sprite_source_size.y as i16)
+                .into(),
+            width: sprite.frame.w.into(),
+            height: sprite.frame.h.into(),
+        }
+    }
+
+    fn frame_name(&self) -> String {
+        format!(
+            "{} ({})",
+            self.state_machine.frame_name(),
+            (self.state_machine.context().frame / 3) + 1
+        )
+    }
+
+    fn current_sprite(&self) -> Option<&Cell> {
+        self.sprite_sheet.frames.get(&self.frame_name())
     }
 
     fn run_right(&mut self) {
