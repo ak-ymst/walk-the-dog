@@ -129,6 +129,14 @@ impl Game for WalkTheDog {
             if walk
                 .boy
                 .bounding_box()
+                .intersects(&walk.platform.bounding_box())
+            {
+                walk.boy.land_on(walk.platform.bounding_box().y)
+            }
+
+            if walk
+                .boy
+                .bounding_box()
                 .intersects(walk.stone.bounding_box())
             {
                 walk.boy.knock_out()
@@ -234,6 +242,10 @@ impl RedHatBoy {
     fn knock_out(&mut self) {
         self.state_machine = self.state_machine.transition(Event::KnockOut)
     }
+
+    fn land_on(&mut self, position: f32) {
+        self.state_machine = self.state_machine.transition(Event::Land(position))
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -267,7 +279,9 @@ impl RedHatBoyStateMachine {
             (RedHatBoyStateMachine::Sliding(state), Event::KnockOut) => state.knock_out().into(),
             (RedHatBoyStateMachine::Sliding(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Jump(state), Event::KnockOut) => state.knock_out().into(),
-            (RedHatBoyStateMachine::Jump(state), Event::Land(position)) => state.land().into(),
+            (RedHatBoyStateMachine::Jump(state), Event::Land(position)) => {
+                state.land_on(position).into()
+            }
             (RedHatBoyStateMachine::Jump(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Falling(state), Event::Update) => state.update().into(),
 
@@ -350,7 +364,7 @@ impl From<SlidingEndState> for RedHatBoyStateMachine {
 impl From<JumpEndState> for RedHatBoyStateMachine {
     fn from(end_state: JumpEndState) -> Self {
         match end_state {
-            JumpEndState::Complete(running_state) => running_state.into(),
+            JumpEndState::Landing(running_state) => running_state.into(),
             JumpEndState::Jump(sliding_state) => sliding_state.into(),
         }
     }
@@ -452,6 +466,12 @@ mod red_hat_boy_states {
 
         fn set_vertical_velocity(mut self, y: i16) -> Self {
             self.velocity.y = y;
+            self
+        }
+
+        pub fn set_on(mut self, position: i16) -> Self {
+            let position = position - PLAYER_HEIGHT;
+            self.position.y = position;
             self
         }
     }
@@ -559,15 +579,16 @@ mod red_hat_boy_states {
             self.context = self.context.update(JUMP_FRAMES);
 
             if self.context.position.y >= FLOOR {
-                JumpEndState::Complete(self.land())
+                //                JumpEndState::Complete(self.land())
+                JumpEndState::Landing(self.land_on(HEIGHT.into()))
             } else {
                 JumpEndState::Jump(self)
             }
         }
 
-        pub fn land(mut self) -> RedHatBoyState<Running> {
+        pub fn land_on(self, position: f32) -> RedHatBoyState<Running> {
             RedHatBoyState {
-                context: self.context.reset_frame(),
+                context: self.context.reset_frame().set_on(position as i16),
                 _state: Running,
             }
         }
@@ -615,7 +636,7 @@ mod red_hat_boy_states {
     }
 
     pub enum JumpEndState {
-        Complete(RedHatBoyState<Running>),
+        Landing(RedHatBoyState<Running>),
         Jump(RedHatBoyState<Jump>),
     }
 
