@@ -7,10 +7,61 @@ use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
 use web_sys::HtmlImageElement;
 
+struct Platform {
+    sheet: Sheet,
+    image: HtmlImageElement,
+    position: Point,
+}
+
+impl Platform {
+    fn new(sheet: Sheet, image: HtmlImageElement, position: Point) -> Self {
+        Platform {
+            sheet,
+            image,
+            position,
+        }
+    }
+
+    fn bounding_box(&self) -> Rect {
+        let platform = self
+            .sheet
+            .frames
+            .get("13.png")
+            .expect("13.png does not exist");
+
+        Rect {
+            x: self.position.x.into(),
+            y: self.position.y.into(),
+            width: (platform.frame.w * 3).into(),
+            height: platform.frame.h.into(),
+        }
+    }
+
+    fn draw(&self, renderer: &Renderer) {
+        let platform = self
+            .sheet
+            .frames
+            .get("13.png")
+            .expect("13.png does not exist");
+
+        renderer.draw_image(
+            &self.image,
+            &Rect {
+                x: platform.frame.x.into(),
+                y: platform.frame.y.into(),
+                width: (platform.frame.w * 3).into(),
+                height: platform.frame.h.into(),
+            },
+            &self.bounding_box(),
+        );
+    }
+}
+
 pub struct Walk {
     boy: RedHatBoy,
     background: Image,
     stone: Image,
+    platform: Platform,
 }
 
 pub enum WalkTheDog {
@@ -40,10 +91,19 @@ impl Game for WalkTheDog {
 
                 let stone = engine::load_image("Stone.png").await?;
 
+                let platform_sheet = browser::fetch_json("tiles.json").await?;
+
+                let platform = Platform::new(
+                    platform_sheet.into_serde::<Sheet>()?,
+                    engine::load_image("tiles.png").await?,
+                    Point { x: 200, y: 400 },
+                );
+
                 Ok(Box::new(WalkTheDog::Loaded(Walk {
                     boy: rhb,
                     background: Image::new(background, Point { x: 0, y: 0 }),
                     stone: Image::new(stone, Point { x: 150, y: 546 }),
+                    platform,
                 })))
             }
             WalkTheDog::Loaded(_) => Err(anyhow!("Error: Game is already initialized!")),
@@ -86,6 +146,7 @@ impl Game for WalkTheDog {
             walk.background.draw(renderer);
             walk.boy.draw(renderer);
             walk.stone.draw(renderer);
+            walk.platform.draw(renderer);
         }
     }
 }
@@ -188,6 +249,7 @@ pub enum Event {
     Jump,
     Slide,
     KnockOut,
+    Land,
     Update,
 }
 
@@ -195,16 +257,18 @@ impl RedHatBoyStateMachine {
     fn transition(self, event: Event) -> Self {
         match (self, event) {
             (RedHatBoyStateMachine::Idle(state), Event::Run) => state.run().into(),
+            (RedHatBoyStateMachine::Idle(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Running(state), Event::Slide) => state.slide().into(),
             (RedHatBoyStateMachine::Running(state), Event::Jump) => state.jump().into(),
             (RedHatBoyStateMachine::Running(state), Event::KnockOut) => state.knock_out().into(),
-            (RedHatBoyStateMachine::Jump(state), Event::KnockOut) => state.knock_out().into(),
-            (RedHatBoyStateMachine::Sliding(state), Event::KnockOut) => state.knock_out().into(),
-            (RedHatBoyStateMachine::Idle(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Running(state), Event::Update) => state.update().into(),
+            (RedHatBoyStateMachine::Sliding(state), Event::KnockOut) => state.knock_out().into(),
             (RedHatBoyStateMachine::Sliding(state), Event::Update) => state.update().into(),
+            (RedHatBoyStateMachine::Jump(state), Event::KnockOut) => state.knock_out().into(),
+            (RedHatBoyStateMachine::Jump(state), Event::Land) => state.land().into(),
             (RedHatBoyStateMachine::Jump(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Falling(state), Event::Update) => state.update().into(),
+
             _ => self,
         }
     }
@@ -496,7 +560,7 @@ mod red_hat_boy_states {
             }
         }
 
-        pub fn land(self) -> RedHatBoyState<Running> {
+        pub fn land(mut self) -> RedHatBoyState<Running> {
             RedHatBoyState {
                 context: self.context.reset_frame(),
                 _state: Running,
