@@ -251,7 +251,7 @@ pub enum Event {
     Jump,
     Slide,
     KnockOut,
-    Land,
+    Land(f32),
     Update,
 }
 
@@ -267,7 +267,7 @@ impl RedHatBoyStateMachine {
             (RedHatBoyStateMachine::Sliding(state), Event::KnockOut) => state.knock_out().into(),
             (RedHatBoyStateMachine::Sliding(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Jump(state), Event::KnockOut) => state.knock_out().into(),
-            (RedHatBoyStateMachine::Jump(state), Event::Land) => state.land().into(),
+            (RedHatBoyStateMachine::Jump(state), Event::Land(position)) => state.land().into(),
             (RedHatBoyStateMachine::Jump(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Falling(state), Event::Update) => state.update().into(),
 
