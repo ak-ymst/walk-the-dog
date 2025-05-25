@@ -390,6 +390,7 @@ mod red_hat_boy_states {
     const PLAYER_HEIGHT: i16 = HEIGHT - FLOOR;
     const STARTING_POINT: i16 = -20;
     const GRAVITY: i16 = 1;
+    const TERMINAL_VELOCITY: i16 = 20;
     const IDLE_FRAME_NAME: &str = "Idle";
     const IDLE_FRAMES: u8 = 29;
     const RUN_FRAME_NAME: &str = "Run";
@@ -442,7 +443,10 @@ mod red_hat_boy_states {
         }
 
         pub fn update(mut self, frame_count: u8) -> Self {
-            self.velocity.y += GRAVITY;
+            if self.velocity.y < TERMINAL_VELOCITY {
+                self.velocity.y += GRAVITY;
+            }
+
             if self.frame < frame_count {
                 self.frame += 1;
             } else {
