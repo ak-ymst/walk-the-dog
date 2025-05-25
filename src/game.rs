@@ -275,6 +275,9 @@ impl RedHatBoyStateMachine {
             (RedHatBoyStateMachine::Running(state), Event::Slide) => state.slide().into(),
             (RedHatBoyStateMachine::Running(state), Event::Jump) => state.jump().into(),
             (RedHatBoyStateMachine::Running(state), Event::KnockOut) => state.knock_out().into(),
+            (RedHatBoyStateMachine::Running(state), Event::Land(position)) => {
+                state.land_on(position).into()
+            }
             (RedHatBoyStateMachine::Running(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Sliding(state), Event::KnockOut) => state.knock_out().into(),
             (RedHatBoyStateMachine::Sliding(state), Event::Update) => state.update().into(),
@@ -538,6 +541,13 @@ mod red_hat_boy_states {
                 _state: Falling {},
             }
         }
+
+        pub fn land_on(self, position: f32) -> RedHatBoyState<Running> {
+            RedHatBoyState {
+                context: self.context.set_on(position as i16),
+                _state: Running {},
+            }
+        }
     }
 
     impl RedHatBoyState<Sliding> {
@@ -579,7 +589,6 @@ mod red_hat_boy_states {
             self.context = self.context.update(JUMP_FRAMES);
 
             if self.context.position.y >= FLOOR {
-                //                JumpEndState::Complete(self.land())
                 JumpEndState::Landing(self.land_on(HEIGHT.into()))
             } else {
                 JumpEndState::Jump(self)
