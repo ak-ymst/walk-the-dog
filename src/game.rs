@@ -7,6 +7,8 @@ use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
 use web_sys::HtmlImageElement;
 
+const HEIGHT: i16 = 600;
+
 struct Platform {
     sheet: Sheet,
     image: HtmlImageElement,
@@ -139,7 +141,7 @@ impl Game for WalkTheDog {
             x: 0.0,
             y: 0.0,
             width: 600.0,
-            height: 600.0,
+            height: HEIGHT as f32,
         });
 
         if let WalkTheDog::Loaded(walk) = self {
@@ -364,8 +366,11 @@ impl From<FallingEndState> for RedHatBoyStateMachine {
 }
 
 mod red_hat_boy_states {
+    use super::HEIGHT;
     use crate::engine::Point;
+
     const FLOOR: i16 = 479;
+    const PLAYER_HEIGHT: i16 = HEIGHT - FLOOR;
     const STARTING_POINT: i16 = -20;
     const GRAVITY: i16 = 1;
     const IDLE_FRAME_NAME: &str = "Idle";
