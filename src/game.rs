@@ -280,6 +280,9 @@ impl RedHatBoyStateMachine {
             }
             (RedHatBoyStateMachine::Running(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Sliding(state), Event::KnockOut) => state.knock_out().into(),
+            (RedHatBoyStateMachine::Sliding(state), Event::Land(position)) => {
+                state.land_on(position).into()
+            }
             (RedHatBoyStateMachine::Sliding(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Jump(state), Event::KnockOut) => state.knock_out().into(),
             (RedHatBoyStateMachine::Jump(state), Event::Land(position)) => {
@@ -580,6 +583,13 @@ mod red_hat_boy_states {
             RedHatBoyState {
                 context: self.context.reset_frame().stop(),
                 _state: Falling {},
+            }
+        }
+
+        pub fn land_on(self, position: f32) -> RedHatBoyState<Sliding> {
+            RedHatBoyState {
+                context: self.context.set_on(position as i16),
+                _state: Sliding {},
             }
         }
     }
