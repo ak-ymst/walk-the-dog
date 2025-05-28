@@ -56,6 +56,8 @@ impl Platform {
             },
             &self.bounding_box(),
         );
+
+        renderer.draw_rect(&self.bounding_box());
     }
 }
 
@@ -200,6 +202,8 @@ impl RedHatBoy {
                 height: sprite.frame.h.into(),
             },
         );
+
+        renderer.draw_rect(&self.bounding_box());
     }
 
     fn update(&mut self) {
