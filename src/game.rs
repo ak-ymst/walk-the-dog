@@ -675,7 +675,7 @@ mod red_hat_boy_states {
 
         pub fn knock_out(self) -> RedHatBoyState<Falling> {
             RedHatBoyState {
-                context: self.context.reset_frame().stop(),
+                context: self.context.set_vertical_velocity(0).reset_frame().stop(),
                 _state: Falling {},
             }
         }
