@@ -110,6 +110,8 @@ impl WalkTheDog {
     }
 }
 
+const LOW_PLATFORM: i16 = 420;
+const HIGH_PLATFORM: i16 = 375;
 #[async_trait(?Send)]
 impl Game for WalkTheDog {
     async fn initialize(&self) -> Result<Box<dyn Game>> {
@@ -131,7 +133,10 @@ impl Game for WalkTheDog {
                 let platform = Platform::new(
                     platform_sheet.into_serde::<Sheet>()?,
                     engine::load_image("tiles.png").await?,
-                    Point { x: 200, y: 400 },
+                    Point {
+                        x: 370,
+                        y: LOW_PLATFORM,
+                    },
                 );
 
                 Ok(Box::new(WalkTheDog::Loaded(Walk {
@@ -450,7 +455,7 @@ mod red_hat_boy_states {
     const IDLE_FRAMES: u8 = 29;
     const RUN_FRAME_NAME: &str = "Run";
     const RUNNING_FRAMES: u8 = 23;
-    const RUNNING_SPEED: i16 = 3;
+    const RUNNING_SPEED: i16 = 4;
     const SLIDING_FRAME_NAME: &str = "Slide";
     const SLIDING_FRAMES: u8 = 14;
     const JUMP_FRAME_NAME: &str = "Jump";
