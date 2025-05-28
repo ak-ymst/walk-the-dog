@@ -145,7 +145,7 @@ impl Game for WalkTheDog {
                 .bounding_box()
                 .intersects(walk.stone.bounding_box())
             {
-                walk.boy.knock_out()
+                // walk.boy.knock_out()
             }
         }
     }
@@ -193,14 +193,7 @@ impl RedHatBoy {
                 width: sprite.frame.w.into(),
                 height: sprite.frame.h.into(),
             },
-            &Rect {
-                x: (self.state_machine.context().position.x + sprite.sprite_source_size.x as i16)
-                    .into(),
-                y: (self.state_machine.context().position.y + sprite.sprite_source_size.y as i16)
-                    .into(),
-                width: sprite.frame.w.into(),
-                height: sprite.frame.h.into(),
-            },
+            &self.destination_box(),
         );
 
         renderer.draw_rect(&self.bounding_box());
@@ -211,6 +204,20 @@ impl RedHatBoy {
     }
 
     fn bounding_box(&self) -> Rect {
+        const X_OFFSET: f32 = 18.0;
+        const Y_OFFSET: f32 = 14.0;
+        const WIDTH_OFFSET: f32 = 28.0;
+
+        let mut bounding_box = self.destination_box();
+        bounding_box.x += X_OFFSET;
+        bounding_box.width -= WIDTH_OFFSET;
+        bounding_box.y += Y_OFFSET;
+        bounding_box.height -= Y_OFFSET;
+
+        bounding_box
+    }
+
+    fn destination_box(&self) -> Rect {
         let sprite = self.current_sprite().expect("Cell not found");
 
         Rect {
