@@ -25,8 +25,8 @@ impl Platform {
     }
 
     fn bounding_boxes(&self) -> Vec<Rect> {
-        const X_OFFSET: f32 = 60.0;
-        const END_HEIGHT: f32 = 54.0;
+        const X_OFFSET: i16 = 60;
+        const END_HEIGHT: i16 = 54;
         let destination_box = self.destination_box();
 
         let bounding_box_one = Rect {
@@ -39,7 +39,7 @@ impl Platform {
         let bounding_box_two = Rect {
             x: destination_box.x + X_OFFSET,
             y: destination_box.y,
-            width: destination_box.width - (X_OFFSET * 2.0),
+            width: destination_box.width - (X_OFFSET * 2),
             height: destination_box.height,
         };
 
@@ -63,8 +63,8 @@ impl Platform {
         Rect {
             x: self.position.x.into(),
             y: self.position.y.into(),
-            width: (platform.frame.w * 3).into(),
-            height: platform.frame.h.into(),
+            width: ((platform.frame.w * 3) as i16).into(),
+            height: (platform.frame.h as i16).into(),
         }
     }
 
@@ -78,10 +78,10 @@ impl Platform {
         renderer.draw_image(
             &self.image,
             &Rect {
-                x: platform.frame.x.into(),
-                y: platform.frame.y.into(),
-                width: (platform.frame.w * 3).into(),
-                height: platform.frame.h.into(),
+                x: (platform.frame.x as i16).into(),
+                y: (platform.frame.y as i16).into(),
+                width: ((platform.frame.w * 3) as i16).into(),
+                height: (platform.frame.h as i16).into(),
             },
             &self.destination_box(),
         );
@@ -198,7 +198,7 @@ impl Game for WalkTheDog {
             for bounding_box in walk.platform.bounding_boxes() {
                 if walk.boy.bounding_box().intersects(&bounding_box) {
                     if walk.boy.velocity_y() > 0 && walk.boy.pos_y() < walk.platform.position.y {
-                        walk.boy.land_on(bounding_box.y);
+                        walk.boy.land_on(bounding_box.y as f32);
                     } else {
                         walk.boy.knock_out();
                     }
@@ -217,10 +217,10 @@ impl Game for WalkTheDog {
 
     fn draw(&self, renderer: &Renderer) {
         renderer.clear(&Rect {
-            x: 0.0,
-            y: 0.0,
-            width: 600.0,
-            height: HEIGHT as f32,
+            x: 0,
+            y: 0,
+            width: 600,
+            height: HEIGHT,
         });
 
         if let WalkTheDog::Loaded(walk) = self {
@@ -255,10 +255,10 @@ impl RedHatBoy {
         renderer.draw_image(
             &self.image,
             &Rect {
-                x: sprite.frame.x.into(),
-                y: sprite.frame.y.into(),
-                width: sprite.frame.w.into(),
-                height: sprite.frame.h.into(),
+                x: (sprite.frame.x as i16).into(),
+                y: (sprite.frame.y as i16).into(),
+                width: (sprite.frame.w as i16).into(),
+                height: (sprite.frame.h as i16).into(),
             },
             &self.destination_box(),
         );
@@ -271,9 +271,9 @@ impl RedHatBoy {
     }
 
     fn bounding_box(&self) -> Rect {
-        const X_OFFSET: f32 = 18.0;
-        const Y_OFFSET: f32 = 14.0;
-        const WIDTH_OFFSET: f32 = 28.0;
+        const X_OFFSET: i16 = 18;
+        const Y_OFFSET: i16 = 14;
+        const WIDTH_OFFSET: i16 = 28;
 
         let mut bounding_box = self.destination_box();
         bounding_box.x += X_OFFSET;
@@ -292,8 +292,8 @@ impl RedHatBoy {
                 .into(),
             y: (self.state_machine.context().position.y + sprite.sprite_source_size.y as i16)
                 .into(),
-            width: sprite.frame.w.into(),
-            height: sprite.frame.h.into(),
+            width: (sprite.frame.w as i16).into(),
+            height: (sprite.frame.h as i16).into(),
         }
     }
 
