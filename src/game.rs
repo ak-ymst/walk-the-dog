@@ -1,10 +1,11 @@
 use self::red_hat_boy_states::*;
 use crate::browser;
 use crate::engine;
-use crate::engine::{Cell, Game, Image, KeyState, Point, Rect, Renderer, Sheet};
+use crate::engine::{Cell, Game, Image, KeyState, Point, Rect, Renderer, Sheet, SpriteSheet};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
+use std::rc::Rc;
 use web_sys::HtmlImageElement;
 
 const HEIGHT: i16 = 600;
@@ -17,8 +18,7 @@ pub trait Obstacle {
 }
 
 struct Platform {
-    sheet: Sheet,
-    image: HtmlImageElement,
+    sheet: Rc<SpriteSheet>,
     position: Point,
 }
 
@@ -45,14 +45,10 @@ impl Obstacle for Platform {
     }
 
     fn draw(&self, renderer: &Renderer) {
-        let platform = self
-            .sheet
-            .frames
-            .get("13.png")
-            .expect("13.png does not exist");
+        let platform = self.sheet.cell("13.png").expect("13.png does not exist");
 
-        renderer.draw_image(
-            &self.image,
+        self.sheet.draw(
+            renderer,
             &Rect::new_from_x_y(
                 (platform.frame.x as i16).into(),
                 (platform.frame.y as i16).into(),
@@ -80,12 +76,8 @@ impl Obstacle for Platform {
 }
 
 impl Platform {
-    fn new(sheet: Sheet, image: HtmlImageElement, position: Point) -> Self {
-        Platform {
-            sheet,
-            image,
-            position,
-        }
+    fn new(sheet: Rc<SpriteSheet>, position: Point) -> Self {
+        Platform { sheet, position }
     }
 
     fn bounding_boxes(&self) -> Vec<Rect> {
@@ -118,11 +110,7 @@ impl Platform {
     }
 
     fn destination_box(&self) -> Rect {
-        let platform = self
-            .sheet
-            .frames
-            .get("13.png")
-            .expect("13.png does not exist");
+        let platform = self.sheet.cell("13.png").expect("13.png does not exist");
 
         Rect::new_from_x_y(
             self.position.x.into(),
@@ -164,6 +152,7 @@ impl Barrier {
 }
 
 pub struct Walk {
+    obstacle_sheet: Rc<SpriteSheet>,
     boy: RedHatBoy,
     backgrounds: [Image; 2],
     obstacles: Vec<Box<dyn Obstacle>>,
@@ -205,11 +194,14 @@ impl Game for WalkTheDog {
 
                 let stone = engine::load_image("Stone.png").await?;
 
-                let platform_sheet = browser::fetch_json("tiles.json").await?;
+                let tiles = browser::fetch_json("tiles.json").await?;
+                let sprite_sheet = Rc::new(SpriteSheet::new(
+                    tiles.into_serde::<Sheet>()?,
+                    engine::load_image("tiles.png").await?,
+                ));
 
                 let platform = Platform::new(
-                    platform_sheet.into_serde::<Sheet>()?,
-                    engine::load_image("tiles.png").await?,
+                    sprite_sheet.clone(),
                     Point {
                         x: 400,
                         y: LOW_PLATFORM,
@@ -232,6 +224,7 @@ impl Game for WalkTheDog {
                         Box::new(Barrier::new(Image::new(stone, Point { x: 150, y: 546 }))),
                         Box::new(platform),
                     ],
+                    obstacle_sheet: sprite_sheet,
                 })))
             }
             WalkTheDog::Loaded(_) => Err(anyhow!("Error: Game is already initialized!")),
