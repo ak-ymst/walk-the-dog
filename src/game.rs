@@ -2,10 +2,11 @@ use self::red_hat_boy_states::*;
 use crate::browser;
 use crate::engine;
 use crate::engine::{Cell, Game, Image, KeyState, Point, Rect, Renderer, Sheet, SpriteSheet};
-use crate::segment::stone_and_platform;
+use crate::segment::{double_stones, stone_and_platform};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
+use rand::Rng;
 use std::rc::Rc;
 use web_sys::HtmlImageElement;
 
@@ -188,6 +189,25 @@ impl Walk {
     fn velocity(&self) -> i16 {
         -self.boy.walking_speed()
     }
+
+    fn generate_next_segment(&mut self) {
+        let mut rng = rand::thread_rng();
+        let i: i32 = rng.r#gen();
+        let next_segment = i % 2;
+
+        let mut next_obstacles = match next_segment {
+            0 => stone_and_platform(
+                self.stone.clone(),
+                self.obstacle_sheet.clone(),
+                self.timeline + OBSTACLE_BUFFER,
+            ),
+            1 => double_stones(self.stone.clone(), self.timeline + OBSTACLE_BUFFER),
+            _ => vec![],
+        };
+
+        self.timeline = rightmost(&next_obstacles);
+        self.obstacles.append(&mut next_obstacles);
+    }
 }
 
 pub enum WalkTheDog {
@@ -285,14 +305,7 @@ impl Game for WalkTheDog {
             });
 
             if walk.timeline < TIMELINE_MINIMUM {
-                let mut next_obstacles = stone_and_platform(
-                    walk.stone.clone(),
-                    walk.obstacle_sheet.clone(),
-                    walk.timeline + OBSTACLE_BUFFER,
-                );
-
-                walk.timeline = rightmost(&next_obstacles);
-                walk.obstacles.append(&mut next_obstacles);
+                walk.generate_next_segment()
             } else {
                 walk.timeline += velocity;
             }

@@ -41,6 +41,27 @@ pub fn stone_and_platform(
     ]
 }
 
+pub fn double_stones(stone: HtmlImageElement, offset_x: i16) -> Vec<Box<dyn Obstacle>> {
+    const INITIAL_STONE_OFFSET: i16 = 150;
+
+    vec![
+        Box::new(Barrier::new(Image::new(
+            stone.clone(),
+            Point {
+                x: offset_x + INITIAL_STONE_OFFSET,
+                y: STONE_ON_GROUND,
+            },
+        ))),
+        Box::new(Barrier::new(Image::new(
+            stone.clone(),
+            Point {
+                x: offset_x + INITIAL_STONE_OFFSET * 4,
+                y: STONE_ON_GROUND,
+            },
+        ))),
+    ]
+}
+
 fn create_floating_platform(sprite_sheet: Rc<SpriteSheet>, position: Point) -> Platform {
     Platform::new(
         sprite_sheet,
