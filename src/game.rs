@@ -10,6 +10,16 @@ use std::rc::Rc;
 use web_sys::HtmlImageElement;
 
 const HEIGHT: i16 = 600;
+const OBSTACLE_BUFFER: i16 = 20;
+const TIMELINE_MINIMUM: i16 = 1000;
+
+fn rightmost(obstacle_list: &Vec<Box<dyn Obstacle>>) -> i16 {
+    obstacle_list
+        .iter()
+        .map(|obstacle| obstacle.right())
+        .max_by(|x, y| x.cmp(&y))
+        .unwrap_or(0)
+}
 
 pub trait Obstacle {
     fn check_intersection(&self, buy: &mut RedHatBoy);
@@ -170,6 +180,8 @@ pub struct Walk {
     boy: RedHatBoy,
     backgrounds: [Image; 2],
     obstacles: Vec<Box<dyn Obstacle>>,
+    stone: HtmlImageElement,
+    timeline: i16,
 }
 
 impl Walk {
@@ -214,6 +226,9 @@ impl Game for WalkTheDog {
                     engine::load_image("tiles.png").await?,
                 ));
 
+                let starting_obstacles = stone_and_platform(stone.clone(), sprite_sheet.clone(), 0);
+                let timeline = rightmost(&starting_obstacles);
+
                 Ok(Box::new(WalkTheDog::Loaded(Walk {
                     boy: rhb,
                     backgrounds: [
@@ -226,8 +241,10 @@ impl Game for WalkTheDog {
                             },
                         ),
                     ],
-                    obstacles: stone_and_platform(stone, sprite_sheet.clone(), 0),
+                    obstacles: starting_obstacles,
                     obstacle_sheet: sprite_sheet,
+                    stone,
+                    timeline,
                 })))
             }
             WalkTheDog::Loaded(_) => Err(anyhow!("Error: Game is already initialized!")),
@@ -266,6 +283,19 @@ impl Game for WalkTheDog {
                 obstacle.move_horizontally(velocity);
                 obstacle.check_intersection(&mut walk.boy);
             });
+
+            if walk.timeline < TIMELINE_MINIMUM {
+                let mut next_obstacles = stone_and_platform(
+                    walk.stone.clone(),
+                    walk.obstacle_sheet.clone(),
+                    walk.timeline + OBSTACLE_BUFFER,
+                );
+
+                walk.timeline = rightmost(&next_obstacles);
+                walk.obstacles.append(&mut next_obstacles);
+            } else {
+                walk.timeline += velocity;
+            }
         }
     }
 
