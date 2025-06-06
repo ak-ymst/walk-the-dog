@@ -2,6 +2,7 @@ use self::red_hat_boy_states::*;
 use crate::browser;
 use crate::engine;
 use crate::engine::{Cell, Game, Image, KeyState, Point, Rect, Renderer, Sheet, SpriteSheet};
+use crate::segment::stone_and_platform;
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use gloo_utils::format::JsValueSerdeExt;
@@ -17,7 +18,7 @@ pub trait Obstacle {
     fn right(&self) -> i16;
 }
 
-struct Platform {
+pub struct Platform {
     sheet: Rc<SpriteSheet>,
     bounding_boxes: Vec<Rect>,
     sprites: Vec<Cell>,
@@ -87,7 +88,7 @@ impl Obstacle for Platform {
 }
 
 impl Platform {
-    fn new(
+    pub fn new(
         sheet: Rc<SpriteSheet>,
         position: Point,
         sprite_names: &[&str],
@@ -119,32 +120,6 @@ impl Platform {
     }
 
     fn bounding_boxes(&self) -> &Vec<Rect> {
-        // const X_OFFSET: i16 = 60;
-        // const END_HEIGHT: i16 = 54;
-        // let destination_box = self.destination_box();
-
-        // let bounding_box_one = Rect::new_from_x_y(
-        //     destination_box.x(),
-        //     destination_box.y(),
-        //     X_OFFSET,
-        //     END_HEIGHT,
-        // );
-
-        // let bounding_box_two = Rect::new_from_x_y(
-        //     destination_box.x() + X_OFFSET,
-        //     destination_box.y(),
-        //     destination_box.width - (X_OFFSET * 2),
-        //     destination_box.height,
-        // );
-
-        // let bounding_box_three = Rect::new_from_x_y(
-        //     destination_box.x() + destination_box.width - X_OFFSET,
-        //     destination_box.y(),
-        //     X_OFFSET,
-        //     END_HEIGHT,
-        // );
-
-        // vec![bounding_box_one, bounding_box_two, bounding_box_three]
         &self.bounding_boxes
     }
 
@@ -239,20 +214,6 @@ impl Game for WalkTheDog {
                     engine::load_image("tiles.png").await?,
                 ));
 
-                let platform = Platform::new(
-                    sprite_sheet.clone(),
-                    Point {
-                        x: 400,
-                        y: LOW_PLATFORM,
-                    },
-                    &["13.png", "14.png", "15.png"],
-                    &[
-                        Rect::new_from_x_y(0, 0, 60, 54),
-                        Rect::new_from_x_y(60, 0, 384 - (60 * 2), 93),
-                        Rect::new_from_x_y(384 - 60, 0, 60, 54),
-                    ],
-                );
-
                 Ok(Box::new(WalkTheDog::Loaded(Walk {
                     boy: rhb,
                     backgrounds: [
@@ -265,10 +226,7 @@ impl Game for WalkTheDog {
                             },
                         ),
                     ],
-                    obstacles: vec![
-                        Box::new(Barrier::new(Image::new(stone, Point { x: 150, y: 546 }))),
-                        Box::new(platform),
-                    ],
+                    obstacles: stone_and_platform(stone, sprite_sheet.clone(), 0),
                     obstacle_sheet: sprite_sheet,
                 })))
             }

@@ -8,6 +8,8 @@ mod engine;
 
 mod game;
 
+mod segment;
+
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
 //
