@@ -51,7 +51,11 @@ features = [
   "HtmlImageElement",
   "CanvasRenderingContext2d",
   "Performance",
-  "KeyboardEvent"
+  "KeyboardEvent",
+  "AudioContext",
+  "AudioBuffer",
+  "AudioBufferSourceNode",
+  "AudioDestinationNode"
 ]
 
 # These crates are used for running unit tests.

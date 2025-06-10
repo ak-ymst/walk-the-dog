@@ -3,12 +3,10 @@ use wasm_bindgen::prelude::*;
 
 #[macro_use]
 mod browser;
-
 mod engine;
-
 mod game;
-
 mod segment;
+mod sound;
 
 // When the `wee_alloc` feature is enabled, this uses `wee_alloc` as the global
 // allocator.
