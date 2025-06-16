@@ -7,8 +7,6 @@ use wasm_bindgen::closure::Closure;
 use wasm_bindgen::closure::WasmClosure;
 use wasm_bindgen::closure::WasmClosureFnOnce;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::AudioBuffer;
-use web_sys::AudioContext;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::Document;
 use web_sys::HtmlCanvasElement;
@@ -96,20 +94,6 @@ pub async fn fetch_array_buffer(resource: &str) -> Result<ArrayBuffer> {
         .map_err(|err| anyhow!("Error converting array buffer into a future {:#?}", err))?
         .dyn_into()
         .map_err(|err| anyhow!("Error converting raw JSValue to ArrayBuffer {:#?}", err))
-}
-
-pub async fn decode_audio_data(
-    ctx: &AudioContext,
-    array_buffer: &ArrayBuffer,
-) -> Result<AudioBuffer> {
-    JsFuture::from(
-        ctx.decode_audio_data(&array_buffer)
-            .map_err(|err| anyhow!("Could not decode from array buffer {:#?}", err))?,
-    )
-    .await
-    .map_err(|err| anyhow!("Could not convert promise to future {:#?}", err))?
-    .dyn_into()
-    .map_err(|err| anyhow!("Could not cast into AudioBuffer {:#?}", err))
 }
 
 pub fn new_image() -> Result<HtmlImageElement> {
