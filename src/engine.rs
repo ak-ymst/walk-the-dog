@@ -1,4 +1,5 @@
 use crate::browser;
+use crate::sound;
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
 use futures::channel::mpsc::{UnboundedReceiver, unbounded};
@@ -11,6 +12,8 @@ use std::sync::Mutex;
 use wasm_bindgen::JsCast;
 use wasm_bindgen::JsValue;
 use wasm_bindgen::closure::Closure;
+use web_sys::AudioBuffer;
+use web_sys::AudioContext;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::HtmlImageElement;
 
@@ -356,4 +359,34 @@ impl KeyState {
 pub struct Point {
     pub x: i16,
     pub y: i16,
+}
+
+#[derive(Clone)]
+pub struct Audio {
+    context: AudioContext,
+}
+
+impl Audio {
+    pub fn mew() -> Result<Self> {
+        Ok(Audio {
+            context: sound::create_audio_context()?,
+        })
+    }
+
+    pub async fn load_sound(&self, filename: &str) -> Result<Sound> {
+        let array_buffer = browser::fetch_array_buffer(filename).await?;
+        let audio_buffer = browser::decode_audio_data(&self.context, &array_buffer).await?;
+        Ok(Sound {
+            buffer: audio_buffer,
+        })
+    }
+
+    pub fn play_sound(&self, sound: &Sound) -> Result<()> {
+        sound::play_sound(&self.context, &sound.buffer)
+    }
+}
+
+#[derive(Clone)]
+pub struct Sound {
+    buffer: AudioBuffer,
 }
