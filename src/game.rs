@@ -680,6 +680,14 @@ mod red_hat_boy_states {
             self.position.y = position;
             self
         }
+
+        fn play_jump_sound(self) -> Self {
+            if let Err(err) = self.audio.play_sound(&self.jump_sound) {
+                log!("Error playing jump sound {:#?}", err);
+            }
+
+            self
+        }
     }
 
     impl RedHatBoyState<Idle> {
@@ -735,7 +743,11 @@ mod red_hat_boy_states {
 
         pub fn jump(self) -> RedHatBoyState<Jump> {
             RedHatBoyState {
-                context: self.context.set_vertical_velocity(JUMP_SPEED).reset_frame(),
+                context: self
+                    .context
+                    .set_vertical_velocity(JUMP_SPEED)
+                    .reset_frame()
+                    .play_jump_sound(),
                 _state: Jump {},
             }
         }
