@@ -1,7 +1,9 @@
 use self::red_hat_boy_states::*;
 use crate::browser;
 use crate::engine;
-use crate::engine::{Cell, Game, Image, KeyState, Point, Rect, Renderer, Sheet, SpriteSheet};
+use crate::engine::{
+    Audio, Cell, Game, Image, KeyState, Point, Rect, Renderer, Sheet, Sound, SpriteSheet,
+};
 use crate::segment::{double_stones, stone_and_platform};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
@@ -230,9 +232,14 @@ impl Game for WalkTheDog {
             WalkTheDog::Loading => {
                 let json = browser::fetch_json("rhb.json").await?;
 
+                let audio = Audio::new()?;
+                let sound = audio.load_sound("SFX_Jump_23.mp3").await?;
+
                 let rhb = RedHatBoy::new(
                     json.into_serde::<Sheet>()?,
                     engine::load_image("rhb.png").await?,
+                    audio,
+                    sound,
                 );
 
                 let background = engine::load_image("BG.png").await?;
@@ -334,9 +341,9 @@ struct RedHatBoy {
 }
 
 impl RedHatBoy {
-    fn new(sheet: Sheet, image: HtmlImageElement) -> Self {
+    fn new(sheet: Sheet, image: HtmlImageElement, audio: Audio, sound: Sound) -> Self {
         RedHatBoy {
-            state_machine: RedHatBoyStateMachine::Idle(RedHatBoyState::new()),
+            state_machine: RedHatBoyStateMachine::Idle(RedHatBoyState::new(audio, sound)),
             sprite_sheet: sheet,
             image,
         }
@@ -573,7 +580,9 @@ impl From<FallingEndState> for RedHatBoyStateMachine {
 
 mod red_hat_boy_states {
     use super::HEIGHT;
+    use crate::engine::Audio;
     use crate::engine::Point;
+    use crate::engine::Sound;
 
     const FLOOR: i16 = 479;
     const PLAYER_HEIGHT: i16 = HEIGHT - FLOOR;
@@ -623,6 +632,8 @@ mod red_hat_boy_states {
         pub frame: u8,
         pub position: Point,
         pub velocity: Point,
+        audio: Audio,
+        jump_sound: Sound,
     }
 
     impl RedHatBoyContext {
@@ -672,7 +683,7 @@ mod red_hat_boy_states {
     }
 
     impl RedHatBoyState<Idle> {
-        pub fn new() -> Self {
+        pub fn new(audio: Audio, jump_sound: Sound) -> Self {
             RedHatBoyState {
                 context: RedHatBoyContext {
                     frame: 0,
@@ -681,6 +692,8 @@ mod red_hat_boy_states {
                         y: FLOOR,
                     },
                     velocity: Point { x: 0, y: 0 },
+                    audio,
+                    jump_sound,
                 },
                 _state: Idle {},
             }

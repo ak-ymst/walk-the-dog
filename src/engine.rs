@@ -367,7 +367,7 @@ pub struct Audio {
 }
 
 impl Audio {
-    pub fn mew() -> Result<Self> {
+    pub fn new() -> Result<Self> {
         Ok(Audio {
             context: sound::create_audio_context()?,
         })
