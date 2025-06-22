@@ -358,7 +358,7 @@ impl RedHatBoy {
     }
 
     fn update(&mut self) {
-        self.state_machine = self.state_machine.update();
+        self.state_machine = self.state_machine.clone().update();
     }
 
     fn bounding_box(&self) -> Rect {
@@ -399,23 +399,26 @@ impl RedHatBoy {
     }
 
     fn run_right(&mut self) {
-        self.state_machine = self.state_machine.transition(Event::Run)
+        self.state_machine = self.state_machine.clone().transition(Event::Run)
     }
 
     fn slide(&mut self) {
-        self.state_machine = self.state_machine.transition(Event::Slide)
+        self.state_machine = self.state_machine.clone().transition(Event::Slide)
     }
 
     fn jump(&mut self) {
-        self.state_machine = self.state_machine.transition(Event::Jump)
+        self.state_machine = self.state_machine.clone().transition(Event::Jump)
     }
 
     fn knock_out(&mut self) {
-        self.state_machine = self.state_machine.transition(Event::KnockOut)
+        self.state_machine = self.state_machine.clone().transition(Event::KnockOut)
     }
 
     fn land_on(&mut self, position: i16) {
-        self.state_machine = self.state_machine.transition(Event::Land(position as f32))
+        self.state_machine = self
+            .state_machine
+            .clone()
+            .transition(Event::Land(position as f32))
     }
 
     fn pos_y(&self) -> i16 {
@@ -431,7 +434,7 @@ impl RedHatBoy {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 enum RedHatBoyStateMachine {
     Idle(RedHatBoyState<Idle>),
     Running(RedHatBoyState<Running>),
@@ -452,7 +455,7 @@ pub enum Event {
 
 impl RedHatBoyStateMachine {
     fn transition(self, event: Event) -> Self {
-        match (self, event) {
+        match (self.clone(), event) {
             (RedHatBoyStateMachine::Idle(state), Event::Run) => state.run().into(),
             (RedHatBoyStateMachine::Idle(state), Event::Update) => state.update().into(),
             (RedHatBoyStateMachine::Running(state), Event::Slide) => state.slide().into(),
@@ -603,7 +606,7 @@ mod red_hat_boy_states {
     #[derive(Copy, Clone)]
     pub struct KnockedOut;
 
-    #[derive(Copy, Clone)]
+    #[derive(Clone)]
     pub struct RedHatBoyState<S> {
         context: RedHatBoyContext,
         _state: S,
@@ -615,7 +618,7 @@ mod red_hat_boy_states {
         }
     }
 
-    #[derive(Copy, Clone)]
+    #[derive(Clone)]
     pub struct RedHatBoyContext {
         pub frame: u8,
         pub position: Point,
