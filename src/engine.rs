@@ -15,6 +15,7 @@ use wasm_bindgen::closure::Closure;
 use web_sys::AudioBuffer;
 use web_sys::AudioContext;
 use web_sys::CanvasRenderingContext2d;
+use web_sys::HtmlElement;
 use web_sys::HtmlImageElement;
 
 pub struct SpriteSheet {
@@ -393,4 +394,17 @@ impl Audio {
 #[derive(Clone)]
 pub struct Sound {
     buffer: AudioBuffer,
+}
+
+pub fn add_click_handler(elem: HtmlElement) -> UnboundedReceiver<()> {
+    let (mut click_sender, click_receiver) = unbounded();
+
+    let on_click = browser::closure_wrap(Box::new(move || {
+        click_sender.start_send(());
+    }) as Box<dyn FnMut()>);
+
+    elem.set_onclick(Some(on_click.as_ref().unchecked_ref()));
+    on_click.forget();
+
+    click_receiver
 }

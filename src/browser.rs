@@ -9,6 +9,7 @@ use wasm_bindgen::closure::WasmClosureFnOnce;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::CanvasRenderingContext2d;
 use web_sys::Document;
+use web_sys::Element;
 use web_sys::HtmlCanvasElement;
 use web_sys::HtmlImageElement;
 use web_sys::Response;
@@ -128,4 +129,29 @@ pub fn create_raf_closure(f: impl FnMut(f64) + 'static) -> LoopClosure {
 
 pub fn closure_wrap<T: WasmClosure + ?Sized>(data: Box<T>) -> Closure<T> {
     return Closure::wrap(data);
+}
+
+pub fn draw_ui(html: &str) -> Result<()> {
+    find_ui()?
+        .insert_adjacent_html("afterbegin", html)
+        .map_err(|err| anyhow!("Could not insert html {:#?}", err))
+}
+
+pub fn hide_ui() -> Result<()> {
+    let ui = find_ui()?;
+
+    if let Some(child) = ui.first_child() {
+        ui.remove_child(&child)
+            .map(|_removed_child| ())
+            .map_err(|err| anyhow!("Failed to remove child {:#?}", err))
+    } else {
+        Ok(())
+    }
+}
+
+fn find_ui() -> Result<Element> {
+    document().and_then(|doc| {
+        doc.get_element_by_id("ui")
+            .ok_or_else(|| anyhow!("UI element not found"))
+    })
 }
