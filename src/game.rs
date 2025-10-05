@@ -222,6 +222,10 @@ impl Walk {
             obstacle.draw(renderer);
         });
     }
+
+    fn knocked_out(&self) -> bool {
+        self.boy.knocked_out()
+    }
 }
 
 pub struct WalkTheDog {
@@ -399,7 +403,7 @@ impl From<ReadyEndState> for WalkTheDogStateMachine {
 }
 
 impl WalkTheDogState<Walking> {
-    fn update(mut self, keystate: &KeyState) -> WalkTheDogState<Walking> {
+    fn update(mut self, keystate: &KeyState) -> WalkingEndState {
         if keystate.is_pressed("Space") {
             self.walk.boy.jump();
         }
@@ -435,7 +439,32 @@ impl WalkTheDogState<Walking> {
             self.walk.timeline += walking_speed;
         }
 
-        self
+        if self.walk.knocked_out() {
+            WalkingEndState::Complete(self.end_game())
+        } else {
+            WalkingEndState::Continue(self)
+        }
+    }
+
+    fn end_game(self) -> WalkTheDogState<GameOver> {
+        WalkTheDogState {
+            _state: GameOver,
+            walk: self.walk,
+        }
+    }
+}
+
+enum WalkingEndState {
+    Complete(WalkTheDogState<GameOver>),
+    Continue(WalkTheDogState<Walking>),
+}
+
+impl From<WalkingEndState> for WalkTheDogStateMachine {
+    fn from(state: WalkingEndState) -> Self {
+        match state {
+            WalkingEndState::Complete(game_over) => game_over.into(),
+            WalkingEndState::Continue(walking) => walking.into(),
+        }
     }
 }
 
@@ -568,6 +597,10 @@ impl RedHatBoy {
     fn walking_speed(&self) -> i16 {
         self.state_machine.context().velocity.x
     }
+
+    fn knocked_out(&self) -> bool {
+        self.state_machine.knocked_out()
+    }
 }
 
 #[derive(Clone)]
@@ -641,6 +674,10 @@ impl RedHatBoyStateMachine {
 
     fn update(self) -> Self {
         self.transition(Event::Update)
+    }
+
+    fn knocked_out(&self) -> bool {
+        matches!(self, RedHatBoyStateMachine::KnockedOut(_))
     }
 }
 
