@@ -7,6 +7,7 @@ use crate::engine::{
 use crate::segment::{double_stones, stone_and_platform};
 use anyhow::{Result, anyhow};
 use async_trait::async_trait;
+use futures::channel::mpsc::UnboundedReceiver;
 use gloo_utils::format::JsValueSerdeExt;
 use rand::Rng;
 use std::rc::Rc;
@@ -245,7 +246,15 @@ struct WalkTheDogState<T> {
 
 struct Ready;
 struct Walking;
-struct GameOver;
+struct GameOver {
+    new_game_event: UnboundedReceiver<()>,
+}
+
+impl GameOver {
+    fn new_game_pressed(&mut self) -> bool {
+        matches!(self.new_game_event.try_next(), Ok(Some(())))
+    }
+}
 
 impl WalkTheDog {
     pub fn new() -> Self {
@@ -447,8 +456,15 @@ impl WalkTheDogState<Walking> {
     }
 
     fn end_game(self) -> WalkTheDogState<GameOver> {
+        let receiver = browser::draw_ui("<button id='new_game'>New Game</button>")
+            .and_then(|_unit| browser::find_html_element_by_id("new_game"))
+            .map(|element| engine::add_click_handler(element))
+            .unwrap();
+
         WalkTheDogState {
-            _state: GameOver,
+            _state: GameOver {
+                new_game_event: receiver,
+            },
             walk: self.walk,
         }
     }
@@ -469,8 +485,34 @@ impl From<WalkingEndState> for WalkTheDogStateMachine {
 }
 
 impl WalkTheDogState<GameOver> {
-    fn update(self) -> WalkTheDogState<GameOver> {
-        self
+    fn update(mut self) -> GameOverEndState {
+        if self._state.new_game_pressed() {
+            GameOverEndState::Complete(self.new_game())
+        } else {
+            GameOverEndState::Continue(self)
+        }
+    }
+
+    fn new_game(self) -> WalkTheDogState<Ready> {
+        browser::hide_ui();
+        WalkTheDogState {
+            _state: Ready,
+            walk: self.walk,
+        }
+    }
+}
+
+enum GameOverEndState {
+    Complete(WalkTheDogState<Ready>),
+    Continue(WalkTheDogState<GameOver>),
+}
+
+impl From<GameOverEndState> for WalkTheDogStateMachine {
+    fn from(state: GameOverEndState) -> Self {
+        match state {
+            GameOverEndState::Complete(ready) => ready.into(),
+            GameOverEndState::Continue(game_over) => game_over.into(),
+        }
     }
 }
 

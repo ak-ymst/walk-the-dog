@@ -11,6 +11,7 @@ use web_sys::CanvasRenderingContext2d;
 use web_sys::Document;
 use web_sys::Element;
 use web_sys::HtmlCanvasElement;
+use web_sys::HtmlElement;
 use web_sys::HtmlImageElement;
 use web_sys::Response;
 use web_sys::Window;
@@ -154,4 +155,17 @@ fn find_ui() -> Result<Element> {
         doc.get_element_by_id("ui")
             .ok_or_else(|| anyhow!("UI element not found"))
     })
+}
+
+pub fn find_html_element_by_id(id: &str) -> Result<HtmlElement> {
+    document()
+        .and_then(|doc| {
+            doc.get_element_by_id(id)
+                .ok_or_else(|| anyhow!("Element with id {} not found", id))
+        })
+        .and_then(|element| {
+            element
+                .dyn_into::<HtmlElement>()
+                .map_err(|err| anyhow!("Could not cast into HtmlElement {:#?}", err))
+        })
 }
