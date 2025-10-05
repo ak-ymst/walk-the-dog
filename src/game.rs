@@ -227,6 +227,21 @@ impl Walk {
     fn knocked_out(&self) -> bool {
         self.boy.knocked_out()
     }
+
+    fn reset(walk: Self) -> Self {
+        let starting_obstacles =
+            stone_and_platform(walk.stone.clone(), walk.obstacle_sheet.clone(), 0);
+        let timeline = rightmost(&starting_obstacles);
+
+        Walk {
+            boy: RedHatBoy::reset(walk.boy),
+            backgrounds: walk.backgrounds,
+            obstacles: starting_obstacles,
+            obstacle_sheet: walk.obstacle_sheet,
+            stone: walk.stone,
+            timeline,
+        }
+    }
 }
 
 pub struct WalkTheDog {
@@ -497,7 +512,7 @@ impl WalkTheDogState<GameOver> {
         browser::hide_ui();
         WalkTheDogState {
             _state: Ready,
-            walk: self.walk,
+            walk: Walk::reset(self.walk),
         }
     }
 }
@@ -642,6 +657,15 @@ impl RedHatBoy {
 
     fn knocked_out(&self) -> bool {
         self.state_machine.knocked_out()
+    }
+
+    fn reset(boy: Self) -> Self {
+        RedHatBoy::new(
+            boy.sprite_sheet,
+            boy.image,
+            boy.state_machine.context().audio.clone(),
+            boy.state_machine.context().jump_sound.clone(),
+        )
     }
 }
 
@@ -840,8 +864,8 @@ mod red_hat_boy_states {
         pub frame: u8,
         pub position: Point,
         pub velocity: Point,
-        audio: Audio,
-        jump_sound: Sound,
+        pub audio: Audio,
+        pub jump_sound: Sound,
     }
 
     impl RedHatBoyContext {
